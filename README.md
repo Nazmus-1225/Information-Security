@@ -5,5 +5,5 @@ Lab Assignments:
 Monoalphabetic Cipher
 Polyalphabetic Cipher with key
 Polyalphabetic Cipher without key
-AES
+AES (Both encryption and Decryption)
 SHA512
