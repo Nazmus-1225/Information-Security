@@ -1,236 +1,70 @@
 #include<bits/stdc++.h>
+#include<cstring>
 using namespace std;
-#define ul uint8_t
-#define vul vector<ul>
-#define ROTL8(x,shift) ((uint8_t) ((x) << (shift)) | ((x) >> (8 - (shift))))
-#define pb push_back
-uint8_t sbox[256];
-const int GLFM=283;
-uint16_t rc=1;
-int ind=1;
-const uint8_t cMat[4][4]={ {2,3,1,1}, {1,2,3,1}, {1,1,2,3}, {3,1,1,2}};
-const uint8_t rcon[11] =
- {
-    0x00000000,
-    0x00000001,
-    0x00000002,
-    0x00000004,
-    0x00000008,
-    0x00000010,
-    0x00000020,
-    0x00000040,
-    0x00000080,
-    0x0000001B,
-    0x00000036
- };
- string toHex(ul num){
-    unordered_map<int, string> mp;
-    mp[0] = "0";
-    mp[1] = "1";
-    mp[2] = "2";
-    mp[3] = "3";
-    mp[4] = "4";
-    mp[5] = "5";
-    mp[6] = "6";
-    mp[7] = "7";
-    mp[8] = "8";
-    mp[9] = "9";
-    mp[10] = "A";
-    mp[11] = "B";
-    mp[12] = "C";
-    mp[13] = "D";
-    mp[14] = "E";
-    mp[15] = "F";
-    ul left=num>>4;
-    ul ft=15;
-    ul right=num & ft;
-    string retS=mp[(int)left];
-    retS+=mp[(int)right];
-    return retS;
+
+unsigned char state[4][4];
+unsigned char gResult[4];
+unsigned char mcMatrix[4][4]={{0x02,0x03,0x01,0x01},{0x01,0x02,0x03,0x01},{0x01,0x01,0x02,0x03},{0x03,0x01,0x01,0x02}};
+unsigned char expanded_key[44][4];
+unsigned char roundConstants[]={0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x080,0x1B,0x36};
+string plainText,key,cipherText;
+unsigned char sbox[16][16]={{0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76},
+                            {0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0},
+                            {0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15},
+                            {0x04, 0xC7, 0x23, 0xC3, 0x18, 0x96, 0x05, 0x9A, 0x07, 0x12, 0x80, 0xE2, 0xEB, 0x27, 0xB2, 0x75},
+                            {0x09, 0x83, 0x2C, 0x1A, 0x1B, 0x6E, 0x5A, 0xA0, 0x52, 0x3B, 0xD6, 0xB3, 0x29, 0xE3, 0x2F, 0x84},
+                            {0x53, 0xD1, 0x00, 0xED, 0x20, 0xFC, 0xB1, 0x5B, 0x6A, 0xCB, 0xBE, 0x39, 0x4A, 0x4C, 0x58, 0xCF},
+                            {0xD0, 0xEF, 0xAA, 0xFB, 0x43, 0x4D, 0x33, 0x85, 0x45, 0xF9, 0x02, 0x7F, 0x50, 0x3C, 0x9F, 0xA8},
+                            {0x51, 0xA3, 0x40, 0x8F, 0x92, 0x9D, 0x38, 0xF5, 0xBC, 0xB6, 0xDA, 0x21, 0x10, 0xFF, 0xF3, 0xD2},
+                            {0xCD, 0x0C, 0x13, 0xEC, 0x5F, 0x97, 0x44, 0x17, 0xC4, 0xA7, 0x7E, 0x3D, 0x64, 0x5D, 0x19, 0x73},
+                            {0x60, 0x81, 0x4F, 0xDC, 0x22, 0x2A, 0x90, 0x88, 0x46, 0xEE, 0xB8, 0x14, 0xDE, 0x5E, 0x0B, 0xDB},
+                            {0xE0, 0x32, 0x3A, 0x0A, 0x49, 0x06, 0x24, 0x5C, 0xC2, 0xD3, 0xAC, 0x62, 0x91, 0x95, 0xE4, 0x79},
+                            {0xE7, 0xC8, 0x37, 0x6D, 0x8D, 0xD5, 0x4E, 0xA9, 0x6C, 0x56, 0xF4, 0xEA, 0x65, 0x7A, 0xAE, 0x08},
+                            {0xBA, 0x78, 0x25, 0x2E, 0x1C, 0xA6, 0xB4, 0xC6, 0xE8, 0xDD, 0x74, 0x1F, 0x4B, 0xBD, 0x8B, 0x8A},
+                            {0x70, 0x3E, 0xB5, 0x66, 0x48, 0x03, 0xF6, 0x0E, 0x61, 0x35, 0x57, 0xB9, 0x86, 0xC1, 0x1D, 0x9E},
+                            {0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF},
+                            {0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16}};
+
+
+void padding(unsigned char* pText,int n){
+    int i=0;
+    for(;i<plainText.length();i++){
+        pText[i]=plainText.at(i);
+    }
+    if(n!=plainText.length()){
+            i=plainText.length();
+            pText[i]=0x80;
+            i++;
+            for(;i<n;i++){
+                pText[i]=0x00;
+            }}
+
 }
 
-void circular_shift(vul &tempWord,int shift){
+void blockToState(unsigned char* pText,int block){
+    int i=block*16;
+    int j=i+16;
+    int k=0,l=0;
 
-
-	for(int i=0;i<shift;i++){
-		ul tmp=tempWord[0];
-		for(int j=0;j<3;j++){
-			tempWord[j]=tempWord[j+1];
-		}
-		tempWord[3]=tmp;
-	}
-	//for(int i=0;i<4;i++)
-	//if(tempWord[i]>=256)cout<<tempWord[i]<<endl;
-}
-
-void rcAdd(vul &tempWord){
-	ul temp;
-	temp=tempWord[0];
-	(temp^=rcon[ind]);
-	ind++;
-	//if(temp>=256)temp^=GLFM;
-	tempWord[0]=temp;
-	//rc<<=1;
-	/*if(rc>=256){
-		rc^=GLFM;
-	}
-	for(int i=0;i<4;i++);
-	//if(tempWord[i]>=256)cout<<tempWord[i]<<endl;*/
-}
-void fieldAdd(vul &word1, vul &word2, vul &wordF){
-
-	for(int i=0;i<4;i++){
-		wordF[i]=word1[i]^word2[i];
-		if(wordF[i]>=256)wordF[i]^=283;
-	}
+        for(;k<4;k++){
+            for(l=0;l<4;l++){
+                state[l][k]=pText[i];
+                i++;}}
 
 }
 
 
-void box() {
-	uint8_t p = 1, q = 1;
+void keyToBox(string x){
+    int i,j,k=0;
+    for(i=0;i<4;i++){
+        for(j=0;j<4;j++){{
+                expanded_key[i][j]=x.at(k);
+                k++;
+            }
+        }}}
 
-	/* loop invariant: p * q == 1 in the Galois field */
-	do {
-		/* multiply p by 3 */
-		p = p ^ (p << 1) ^ (p & 0x80 ? 0x11B : 0);
-
-		/* divide q by 3 (equals multiplication by 0xf6) */
-		q ^= q << 1;
-		q ^= q << 2;
-		q ^= q << 4;
-		q ^= q & 0x80 ? 0x09 : 0;
-
-		/* compute the affine transformation */
-		uint8_t xformed = q ^ ROTL8(q, 1) ^ ROTL8(q, 2) ^ ROTL8(q, 3) ^ ROTL8(q, 4);
-
-		sbox[p] = xformed ^ 0x63;
-	} while (p != 1);
-
-	/* 0 is a special case since it has no inverse */
-	sbox[0] = 0x63;
-}
-
-void substituteK(vul &tempWord){
-	for(int i=0;i<4;i++){
-
-		tempWord[i]=(ul)sbox[tempWord[i]];
-		if(tempWord[i]>=256)cout<<tempWord[i]<<endl;
-	}
-}
-
-void toMatrix(string &input, vector<vul> &iMat){
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			iMat[j][i]=input[4*i+j];
-		}
-	}
-}
-
-void keyScheduling(string &key, vul &keyVector){
-	int size=0;
-	for(int i=0;i<44;i++){
-		if(i<4){
-			for(int j=0;j<key.size();j++){
-				keyVector.pb(key[j]);
-			}
-			size=16;
-			i=3;
-		}
-		else if(i%4==0){
-			vul wi_1;
-			vul wi_4;
-			for(int j=4;j>=1;j--){
-				wi_1.pb(keyVector[size-j]);
-				wi_4.pb(keyVector[size-12-j]);
-			}
-			circular_shift(wi_1,1);
-			//for(auto x:wi_1)cout<<toHex(x)<<" ";
-			//cout<<endl;
-			substituteK(wi_1);
-			//for(auto x:wi_1)cout<<toHex(x)<<" ";
-			//cout<<endl;
-			rcAdd(wi_1);
-			vul w_f(4);
-			//for(auto x:wi_1)cout<<toHex(x)<<" ";
-			fieldAdd(wi_1,wi_4,w_f);
-			for(int j=0;j<4;j++){
-				//cout<<w_f[j]<<endl;
-				keyVector.pb(w_f[j]);
-			}
-			//cout<<endl;
-			/*for(auto x:w_f)cout<<toHex(x)<<" ";
-			cout<<endl;
-			for(auto x:w_f)cout<<(x)<<" ";
-			cout<<endl;*/
-
-			size+=4;
-		}
-		else{
-			vul wi_1;
-			vul wi_4;
-			for(int j=4;j>=1;j--){
-				wi_1.pb(keyVector[size-j]);
-				wi_4.pb(keyVector[size-12-j]);
-			}
-			//circular_shift(wi_1);
-			//substituteK(wi_1);
-			//rcAdd(wi_1);
-			vul w_f(4);
-			fieldAdd(wi_1,wi_4,w_f);
-			for(int j=0;j<4;j++){
-				keyVector.pb(w_f[j]);
-			}
-			size+=4;
-		}
-	}
-	/*for(int i=0;i<176;i++){
-		cout<<toHex(keyVector[i])<<" ";
-		//cout<<keyVector[i]<<" ";
-	}
-	cout<<endl;*/
-
-}
-void matXor(vector<vul> &iMat, vector<vul> &kMat, vector<vul> &stateMat){
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			stateMat[i][j]= iMat[i][j] ^ kMat[i][j];
-		}
-	}
-}
-void wordMatgenerator(int offset, vul &words, vector<vul> &kMat){
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			kMat[j][i]=words[offset+4*i+j];
-		}
-	}
-}
-void subBytes(vector<vul> &stateMat){
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			stateMat[i][j]=sbox[stateMat[i][j]];
-		}
-	}
-}
-
-void rowShift(vector<vul> &stateMat){
-	/*for(int i=0;i<4;i++){
-		for(int k=0;k<i;k++){
-			ul tmp=stateMat[0][i];
-			for(int j=0;j<3;j++){
-				stateMat[j][i]=stateMat[j+1][i];
-			}
-			stateMat[3][i]=tmp;
-		}
-	}*/
-	int i=0;
-	for(auto &x:stateMat){
-		circular_shift(x,i++);
-	}
-}
-
-ul gmul(ul a, ul b) {
-	ul res = 0;
+unsigned char galoisMultiply(unsigned char a, unsigned char b) {
+	unsigned char res = 0;
 	while (a && b) {
             if (b & 1==1){
                 res ^= a;
@@ -246,123 +80,232 @@ ul gmul(ul a, ul b) {
 	}
 	return res;
 }
-void mixColumn(vector<vul> &stateMat){
-	vector<vul> res(4,vul(4));
-	ul temp;
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			ul temp=0;
-			for(int k=0;k<4;k++){
-				temp^=gmul(cMat[i][k],stateMat[k][j]);
-				if(temp>=256)temp^=283;
 
-			}
-			res[i][j]=temp;
 
-		}
-	}
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			stateMat[i][j]=res[i][j];
-		}
+void keyLeftCircularShift(int round){
+    unsigned char temp;
+    int row=round*4-1;
+    int i;
+    temp=expanded_key[row][0];
+    for(i=1;i<4;i++){gResult[i-1]=expanded_key[row][i];}
+    gResult[3]=temp;
 
-	}
 }
-void addKey(vector<vul>&stateMat,vector<vul> &kMat){
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			stateMat[i][j]^=kMat[i][j];
-		}
-	}
+
+void stateLeftCircularShift(int row){
+    unsigned char temp;
+    int i;
+    temp=state[row][0];
+    for(i=1;i<4;i++){state[row][i-1]=state[row][i];}
+    state[row][3]=temp;
+
 }
-void print(vector<vul> iMat,
-	vector<vul> kMat,vector<vul> stateMat){
 
-	cout<<endl;
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			cout<<toHex(kMat[i][j])<<" ";
-		}
-		cout<<endl;
-	}
-	cout<<endl;
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			cout<<toHex(stateMat[i][j])<<" ";
-		}
-		cout<<endl;
-	}
-	cout<<endl;
+void substitueBytes(int round){
+    int i,row,column;
+    row=round*4-1;
+    for(i=0;i<4;i++){
+        row=gResult[i]/16;
+        column=gResult[i]%16;
+        gResult[i]=sbox[row][column];
+    }
 }
-void rounds(vul &words,vector<vul> &iMat,vector<vul> &cipherMat){
-	vector<vul> stateMat(4,vul(4));
-	vector<vul> kMat(4,vul(4));
-	int offset=0;
-	wordMatgenerator(offset,words,kMat);
-	matXor(iMat,kMat,stateMat);
-	offset=16;
-	for(;offset<176;offset+=16){
 
-			subBytes(stateMat);
-			/*print(iMat,kMat,stateMat);
-			cout<<"----";*/
-			rowShift(stateMat);
-			/*print(iMat,kMat,stateMat);
-			cout<<"----";*/
-		if(offset<160){
-			mixColumn(stateMat);
-			/*print(iMat,kMat,stateMat);
-			cout<<"----";*/
-		}
-		wordMatgenerator(offset,words,kMat);
-		addKey(stateMat,kMat);
-	}
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			cipherMat[i][j]=stateMat[i][j];
-		}
-	}
+void addRC(int round){
+    int row=round*4-1;
+    gResult[0]=gResult[0]^roundConstants[round];
+    if(gResult[0]>=256)
+        gResult[0]=gResult[0]^283;
+    }
+
+void gFunc(int round){
+    keyLeftCircularShift(round);
+    substitueBytes(round);
+    addRC(round);
+
 }
-void init(){
-	box();
-	vector<vul> iMat(4,vul(4));
-	vul keyVector;
-	string input="Two One Nine Two";
-	string key= "Thats my Kung Fu";
 
-	toMatrix(input,iMat);
-	keyScheduling(key,keyVector);
-	int roundno=0;
+void substitueBox(){
+    int i,row,column,j;
+    for(i=0;i<4;i++){
+        for(j=0;j<4;j++){
+            row=state[i][j]/16;
+            column=state[i][j]%16;
+            state[i][j]=sbox[row][column];
+    }
+}}
 
-	cout<<endl;
-	vector<vul> cipherMat(4,vul(4));
-	rounds(keyVector,iMat,cipherMat);
-	cout<<"input string: "<<input<<endl;
-	cout<<"key: "<<key<<endl;
-	cout<<"input in hexadecimal: ";
-	for(int i=0;i<input.size();i++){
-		cout<<toHex((int)input[i])<<" ";
-	}
-	cout<<endl;
-	cout<<"Ciphertext: ";
-	for(int i=0;i<4;i++){
-		for(int j=0;j<4;j++){
-			cout<<toHex(cipherMat[j][i])<<" ";
-		}
-	}
+void shiftRow(){
+    int i,j;
+    for(i=1;i<4;i++){
+        for(j=0;j<i;j++){
+            stateLeftCircularShift(i);
+        }
+    }}
 
-	cout<<endl;
-		cout<<"Keys:\n";
-	for(int i=0;i<keyVector.size();i++){
+void mixColumn(){
+    int i,j,k;
+    unsigned char temp[4][4];
+    for(i=0;i<4;i++){
+        for(j=0;j<4;j++){
+            temp[i][j]=0x00;
+        }
+    }
 
-		if(i%16==0)cout<<"Round "<<roundno++<<": ";
-		cout<<toHex(keyVector[i])<<" ";
-		if(i%16==15)cout<<endl;
+    for(i=0;i<4;i++){
+        for(j=0;j<4;j++){
+                for(k=0;k<4;k++){
+                    temp[i][j]=temp[i][j]^galoisMultiply(mcMatrix[i][k],state[k][j]);
 
-	}
+                    if(temp[i][j]>=256)
+                        temp[i][j]=temp[i][j]^283;
+        }
+       }
+    }
+
+    for(i=0;i<4;i++){
+        for(j=0;j<4;j++){
+            state[i][j]=temp[i][j];
+        }
+    }}
+
+
+void addRoundKey(int round){
+    int i,j,k,r=0;
+    i=round*4;
+    k=(round+1)*4;
+
+    for(;i<k;i++){
+        for(j=0;j<4;j++){
+            state[r][j]=state[r][j]^expanded_key[i][j];
+        }
+        r++;}}
+
+void transposeKey(){
+    int i,j,k,r,c,round=0;
+    unsigned char temp[4][4];
+
+    for(;round<=10;round++){
+        r=0;
+        i=round*4;
+        k=i+4;
+
+        for(;i<k;i++){
+            for(j=0;j<4;j++){
+                temp[r][j]=expanded_key[i][j];}
+        r++;}
+
+        i=round*4;
+        k=i+4;
+
+        for(;i<k;i++){
+            r=i%4;
+            for(j=0;j<4;j++){
+                c=j;
+                expanded_key[i][j]=temp[c][r];
+}}
+    }
+
 }
+
+void keyExpansion(){
+    int round=1,i,j,k,t;
+
+    for(;round<=10;round++){
+        i=round*4;
+        k=(round+1)*4;
+        gFunc(round);
+
+        for(;i<k;i++){
+            if(i%4==0){
+                for(j=0;j<4;j++){
+                expanded_key[i][j]=expanded_key[i-4][j]^gResult[j];}}
+
+            else for(j=0;j<4;j++){
+                expanded_key[i][j]=expanded_key[i-1][j]^expanded_key[i-4][j];}
+        }
+    }
+    transposeKey();
+}
+
+
+
+void Encryption(unsigned char* cText,int block){
+    int round=0,i,j,k,l;
+
+    for(;round<=10;round++){
+        if(round==0){
+            addRoundKey(round);}
+        else if(round==10){
+            substitueBox();
+            shiftRow();
+            addRoundKey(round);}
+        else
+            {substitueBox();
+            shiftRow();
+            mixColumn();
+            addRoundKey(round);}}
+
+    i=block*16;
+    j=i+16;
+    k=0;
+
+        for(;k<4;k++){
+            for(l=0;l<4;l++){
+                    cText[i]=state[l][k];
+            i++;
+            }}
+
+}
+
+
+void print(unsigned char* cText,int n){
+     int i,j;
+     cout<<"KEYS"<<endl;
+    for(i=0;i<44;i++){
+        if(i%4==0){cout<<"Round "<<i/4<<endl;}
+            for(j=0;j<4;j++)
+                printf("%X  ",expanded_key[i][j]);
+    cout<<endl;
+    if(i%4==3){cout<<endl;}}
+
+   cout<<endl<<"Plain Text:"<<endl;
+   for(i=0;i<plainText.length();i++){
+                printf("%X  ",plainText.at(i));}
+    cout<<endl<<"Cipher Text:"<<endl;
+    for(i=0;i<n;i++){
+                printf("%X  ",cText[i]);}}
+
+
+
 
 int main(){
-	init();
-}
 
+plainText="Two One Nine Two";
+key="Thats my Kung Fu";
+
+int i,j,n=plainText.length();
+if(n%16!=0){
+    n=n/16;
+    n++;
+    n=n*16;
+}
+keyToBox(key);
+keyExpansion();
+
+unsigned char pText[n];
+unsigned char cText[n];
+padding(pText,n);
+
+
+
+    int block=n/16;
+
+    for(i=0;i<block;i++){
+    blockToState(pText,i);
+   Encryption(cText,i);}
+   print(cText,n);
+
+return 0;
+
+}
