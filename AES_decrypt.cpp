@@ -278,12 +278,17 @@ void print(unsigned char* pText,int n){
     cout<<endl;
     if(i%4==3){cout<<endl;}}
 
-   cout<<endl<<"Plain Text:"<<endl;
+   cout<<endl<<"Cipher Text:"<<endl;
    for(i=0;i<n;i++){
                 printf("%X  ",cipherText[i]);}
-    cout<<endl<<"Cipher Text:"<<endl;
+    cout<<endl<<"Plain Text:"<<endl;
     for(i=0;i<n;i++){
-                printf("%X  ",pText[i]);}}
+                if(pText[i]==0x80){break;}
+                printf("%X  ",pText[i]);}
+    cout<<endl;
+    for(i=0;i<n;i++){
+                if(pText[i]==0x80){break;}
+                printf("%c",pText[i]);}}
 
 
 
@@ -299,17 +304,10 @@ keyExpansion();
 
 
 unsigned char pText[n];
-
     int block=n/16;
 
     for(i=0;i<block;i++){
     blockToState(cipherText,i);
-    for(int i=0;i<4;i++){
-        for(int j=0;j<4;j++){
-            printf("%X ",state[i][j]);
-        }
-        cout<<endl;
-    }
    Decryption(pText,i);}
    print(pText,n);
 
