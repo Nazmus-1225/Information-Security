@@ -141,23 +141,24 @@ void wordGenerator(string text,int block){
     int i=0;
     for(i=0;i<80;i++){
         Func(i);}
-    res[0]+=a;
-    res[1]+=b;
-    res[2]+=c;
-    res[3]+=d;
-    res[4]+=e;
-    res[5]+=f;
-    res[6]+=g;
-    res[7]+=h;
 
-    a=res[0];
-    b=res[1];
-    c=res[2];
-    d=res[3];
-    e=res[4];
-    f=res[5];
-    g=res[6];
-    h=res[7];
+    a+=res[0];
+    b+=res[1];
+    c+=res[2];
+    d+=res[3];
+    e+=res[4];
+    f+=res[5];
+    g+=res[6];
+    h+=res[7];
+
+    res[0]=a;
+    res[1]=b;
+    res[2]=c;
+    res[3]=d;
+    res[4]=e;
+    res[5]=f;
+    res[6]=g;
+    res[7]=h;
 
     }
 
